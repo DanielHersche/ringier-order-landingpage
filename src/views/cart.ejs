@@ -4,7 +4,7 @@
     <%- include('_head') %>
     <title>Warenkorb</title>
   </head>
-  <body>
+  <body class="min-h-screen flex flex-col">
     <%- include('_header', { currentPage: 'Warenkorb' }) %>
 
     <main class="flex-grow">
@@ -35,7 +35,7 @@
 
               <% for (const item of items) { %>
                 <div
-                  class="grid items-center gap-4 py-4 border-b border-border-color whitespace-nowrap"
+                  class="grid items-center gap-4 py-4 border-b border-border-color"
                   style="grid-template-columns: 100px minmax(0, 1fr) auto 6rem 40px;"
                 >
                   <div class="w-[100px] h-[100px] flex items-center">
@@ -46,8 +46,18 @@
                       style="height: 100px; width: 100px; object-fit: contain; display: block;"
                     />
                   </div>
-                  <div class="font-semibold min-w-0 truncate">
-                    <%= item.offer.name %>
+                  <div class="min-w-0">
+                    <div class="font-semibold truncate"><%= item.offer.name %></div>
+                    <% if (item.offer.headlineHtml) { %>
+                      <%
+                        const headlineText = String(item.offer.headlineHtml || '')
+                          .replace(/<[^>]*>/g, '')
+                          .trim();
+                      %>
+                      <div class="text-secondary-gray text-sm mt-1 leading-snug font-normal">
+                        <%= headlineText %>
+                      </div>
+                    <% } %>
                   </div>
                   <div class="font-semibold whitespace-nowrap"><%= item.quantity %></div>
                   <div class="font-semibold text-right whitespace-nowrap">

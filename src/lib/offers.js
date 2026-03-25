@@ -57,7 +57,7 @@ const offers = {
   schweizerIllustrierte: {
     anchorId: 'si',
     name: 'Schweizer Illustrierte',
-    headlineHtml: 'Halbjahresabo für nur CHF 89.– statt CHF 153,40*',
+    headlineHtml: 'Halbjahresabo für nur CHF 129.– statt CHF 153,40*',
     bullets: [
       '26 Ausgaben der Schweizer Illustrierten bequem nach Hause geliefert',
       'kostenloser Zugriff auf das E-Paper',
@@ -68,8 +68,8 @@ const offers = {
     ],
     cartReferenceUrl: 'https://www.online-kiosk.ch/cart/30229435',
     cartLabel: '30229435',
-    priceDisplay: 'CHF 89.–',
-    priceCents: 8900,
+    priceDisplay: 'CHF 129.–',
+    priceCents: 12900,
     imageSrc: '/images/schweizerIllustrierte.png',
     imageAlt: 'Magazin | Schweizer Illustrierte',
   },

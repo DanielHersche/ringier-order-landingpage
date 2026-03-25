@@ -1,45 +1,23 @@
 <%
-  const step = Number(currentStep || 1);
+  const step = Math.max(1, Math.min(3, Number(currentStep || 1)));
   const steps = [
     { idx: 1, label: 'Warenkorb' },
-    { idx: 2, label: 'Bestellung' },
+    { idx: 2, label: 'Adressen' },
     { idx: 3, label: 'Bestätigung' },
   ];
 %>
 
-<div class="flex items-center justify-center gap-3 mb-6" aria-label="Checkout Schritte">
-  <% for (let i = 0; i < steps.length; i++) { const s = steps[i]; const isActive = s.idx === step; const isDone = s.idx < step; %>
-    <div class="flex items-center">
-      <div class="flex flex-col items-center">
-        <div
-          class="flex items-center justify-center rounded-full w-9 h-9 border text-sm font-semibold
-            <%= isActive || isDone ? 'bg-button-primary-bg text-button-primary-text border-button-primary-bg' : 'bg-secondary-gray/10 text-secondary-gray border-border-color' %>"
-        >
-          <%= s.idx %>
-        </div>
-        <div class="mt-2 text-xs <%= isActive ? 'text-header-text font-semibold' : 'text-secondary-gray' %>">
-          <%= s.label %>
-        </div>
+<div class="mb-6" aria-label="Checkout Schritte">
+  <div class="flex items-center justify-center gap-10 text-sm whitespace-nowrap">
+    <% for (let i = 0; i < steps.length; i++) { const s = steps[i]; const isActive = s.idx === step; %>
+      <div class="<%= isActive ? 'font-semibold text-header-text' : 'text-secondary-gray' %>">
+        <span class="mr-2"><%= s.idx %></span><span><%= s.label %></span>
       </div>
 
       <% if (i < steps.length - 1) { %>
-        <div class="px-4 flex items-center justify-center">
-          <div class="w-10 h-1 rounded-full <%= isDone ? 'bg-button-primary-bg' : 'bg-border-color' %>"></div>
-          <div class="ml-[-10px] flex items-center">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M7 4L13 10L7 16"
-                stroke="<%= isDone ? 'currentColor' : 'currentColor' %>"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="<%= isDone ? 'text-button-primary-bg' : 'text-border-color' %>"
-              />
-            </svg>
-          </div>
-        </div>
+        <div class="text-secondary-gray text-xl leading-none px-2" aria-hidden="true">&gt;</div>
       <% } %>
-    </div>
-  <% } %>
+    <% } %>
+  </div>
 </div>
 
