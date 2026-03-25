@@ -7,7 +7,7 @@ const morgan = require('morgan');
 const Stripe = require('stripe');
 const cookieParser = require('cookie-parser');
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
 const { createCheckoutSession } = require('./src/lib/stripeCheckout');
 const { getAllOffers, getOfferById } = require('./src/lib/offers');
@@ -319,13 +319,14 @@ app.post('/api/orders/:orderId/checkout', express.json(), async (req, res) => {
     const order = db.getOrder(orderId);
     if (!order) return res.status(404).json({ error: 'Bestellung nicht gefunden.' });
 
-    if (!process.env.STRIPE_PRICE_MAPPING_JSON) {
-      return res.status(500).json({
-        error: 'STRIPE_PRICE_MAPPING_JSON ist nicht gesetzt. Beispiel siehe README.',
-      });
-    }
-
-    const mapping = JSON.parse(process.env.STRIPE_PRICE_MAPPING_JSON);
+    // Optionales Mapping: nur verwenden, wenn es wirklich gesetzt ist und keine Platzhalter enthält.
+    // Hintergrund: In Windows kann STRIPE_PRICE_MAPPING_JSON als globale Env-Var gesetzt sein;
+    // wenn dort noch "price_..." Platzhalter stehen, soll automatisch auf dynamische Preise (price_data) gefallen werden.
+    const rawMapping = process.env.STRIPE_PRICE_MAPPING_JSON?.trim();
+    const mapping =
+      rawMapping && !rawMapping.includes('price_...')
+        ? JSON.parse(rawMapping)
+        : null;
     const orderItems = db.getOrderItems(orderId) || [];
     if (!orderItems.length) {
       return res.status(400).json({ error: 'Keine Bestellpositionen gefunden.' });
@@ -333,15 +334,29 @@ app.post('/api/orders/:orderId/checkout', express.json(), async (req, res) => {
 
     const lineItems = [];
     for (const it of orderItems) {
-      const offerPrice = mapping[it.offer_id];
-      if (!offerPrice?.stripePriceId) {
-        return res.status(500).json({
-          error: `Stripe Price-ID fehlt für offer_id="${it.offer_id}".`,
-        });
+      const qty = Math.max(1, Number(it.quantity || 1));
+
+      const offer = getOfferById(it.offer_id);
+      if (!offer) {
+        return res.status(400).json({ error: `Ungültiges Angebot im Warenkorb: "${it.offer_id}".` });
       }
+
+      const offerPrice = mapping?.[it.offer_id];
+      if (offerPrice?.stripePriceId) {
+        lineItems.push({ stripePriceId: offerPrice.stripePriceId, quantity: qty });
+        continue;
+      }
+
+      // Fallback: dynamischer Preis (keine Stripe-Produkte/Prices nötig)
       lineItems.push({
-        stripePriceId: offerPrice.stripePriceId,
-        quantity: Math.max(1, Number(it.quantity || 1)),
+        priceData: {
+          currency: 'chf',
+          unit_amount: Number(offer.priceCents),
+          product_data: {
+            name: offer.name,
+          },
+        },
+        quantity: qty,
       });
     }
 

@@ -28,7 +28,7 @@ Kopiere `.env.example` zu `.env` und setze:
 - `BASE_URL` (wichtig für `success_url`/`cancel_url`)
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_PRICE_MAPPING_JSON`
+- optional: `STRIPE_PRICE_MAPPING_JSON` (wenn du feste Stripe Price-IDs nutzen willst; sonst dynamische Preise)
 - `RINGIERE_FORWARD_URL`
 
 ## Start

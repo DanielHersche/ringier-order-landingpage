@@ -13,7 +13,7 @@
           <div class="col-span-full lg:col-start-2 lg:col-span-10">
             <div class="grid grid-cols-6 gap-x-2.5 md:grid md:grid-cols-12 md:gap-x-4 py-10 lg:grid-cols-10">
               <div class="col-span-full">
-                <h1 class="text-2xl md:text-3xl font-bold mb-6">Danke für deine Bestellung</h1>
+                <h1 class="text-2xl md:text-3xl font-bold mb-6">Danke für Ihre Bestellung</h1>
 
                 <div class="bg-white rounded-radius-card border border-border-color p-6">
                   <div class="free-text-component free-text-component-padded mb-4">
@@ -29,18 +29,42 @@
                     <div class="mt-4 font-bold">Total: <%= totalDisplay %></div>
                   </div>
 
+                  <%
+                    const rawStatus = String(order.status || '');
+                    const statusLabels = {
+                      created: 'Bestellung erfasst',
+                      checkout_created: 'Zahlung gestartet',
+                      paid: 'Bezahlt',
+                      forwarded: 'An Ringier übermittelt',
+                      forward_failed: 'Übermittlung an Ringier fehlgeschlagen',
+                    };
+                    const statusLabel = statusLabels[rawStatus] || rawStatus || '-';
+                  %>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
+                    <div class="min-w-0">
                       <div class="text-sm text-secondary-gray">Order-ID</div>
-                      <div class="font-semibold break-all"><%= order.id %></div>
+                      <div
+                        class="font-semibold text-sm md:text-base"
+                        style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;"
+                      >
+                        <%= order.id %>
+                      </div>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                       <div class="text-sm text-secondary-gray">Stripe Session</div>
-                      <div class="font-semibold break-all"><%= sessionId || order.stripe_checkout_session_id || '-' %></div>
+                      <div
+                        class="font-semibold text-sm md:text-base"
+                        style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;"
+                      >
+                        <%= sessionId || order.stripe_checkout_session_id || '-' %>
+                      </div>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                       <div class="text-sm text-secondary-gray">Status</div>
-                      <div class="font-semibold"><%= order.status %></div>
+                      <div class="font-semibold"><%= statusLabel %></div>
+                      <div class="text-xs text-secondary-gray" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">
+                        (<%= rawStatus || '-' %>)
+                      </div>
                     </div>
                   </div>
 
@@ -58,8 +82,8 @@
                   <% } %>
 
                   <p class="mt-4 text-secondary-gray">
-                    Deine Zahlung wurde verarbeitet. Falls Ringiere die Daten erst nach dem Stripe-Webhook übernimmt,
-                    kann es einen kurzen Moment dauern, bis der Status auf “forwarded” steht.
+                    Ihre Zahlung wurde verarbeitet. Die Bestelldaten gehen zuerst bei familleSuisse ein und werden danach (je nach
+                    Konfiguration) an Ringier übermittelt.
                   </p>
 
                   <div class="mt-6">

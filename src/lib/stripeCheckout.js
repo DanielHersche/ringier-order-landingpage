@@ -13,14 +13,22 @@ async function createCheckoutSession({ lineItems, order }) {
     throw new Error('lineItems ist leer');
   }
 
-  let mode = null;
-  // Stripe Checkout erlaubt nur einheitliche mode (payment vs subscription) pro Session.
-  for (const li of lineItems) {
-    const price = await stripe.prices.retrieve(li.stripePriceId);
-    const itemMode = price.recurring ? 'subscription' : 'payment';
-    if (!mode) mode = itemMode;
-    if (mode !== itemMode) {
-      throw new Error('Mischung aus subscription- und payment-preisen ist aktuell nicht unterstützt.');
+  const hasPriceId = lineItems.some((li) => !!li?.stripePriceId);
+  const hasPriceData = lineItems.some((li) => !!li?.priceData);
+  if (hasPriceId && hasPriceData) {
+    throw new Error('Mischung aus stripePriceId und priceData ist nicht unterstützt.');
+  }
+
+  let mode = 'payment';
+  if (hasPriceId) {
+    // Stripe Checkout erlaubt nur einheitliche mode (payment vs subscription) pro Session.
+    for (const li of lineItems) {
+      const price = await stripe.prices.retrieve(li.stripePriceId);
+      const itemMode = price.recurring ? 'subscription' : 'payment';
+      if (!mode) mode = itemMode;
+      if (mode !== itemMode) {
+        throw new Error('Mischung aus subscription- und payment-preisen ist aktuell nicht unterstützt.');
+      }
     }
   }
 
@@ -32,10 +40,12 @@ async function createCheckoutSession({ lineItems, order }) {
 
   const session = await stripe.checkout.sessions.create({
     mode,
-    line_items: lineItems.map((li) => ({
-      price: li.stripePriceId,
-      quantity: Math.max(1, Number(li.quantity || 1)),
-    })),
+    line_items: lineItems.map((li) => {
+      const quantity = Math.max(1, Number(li.quantity || 1));
+      if (li.stripePriceId) return { price: li.stripePriceId, quantity };
+      if (li.priceData) return { price_data: li.priceData, quantity };
+      throw new Error('Line Item muss stripePriceId oder priceData enthalten.');
+    }),
     customer_email: order.email,
     client_reference_id: order.id,
     locale: 'de',
