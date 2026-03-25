@@ -429,8 +429,10 @@ app.post(
         const updatedOrder = db.getOrder(orderId);
         const orderItems = db.getOrderItems(orderId) || [];
         try {
-          await forwardOrderToRingiere({ order: updatedOrder, orderItems, stripeSession: session });
-          db.markForwarded({ orderId });
+          const forwardResult = await forwardOrderToRingiere({ order: updatedOrder, orderItems, stripeSession: session });
+          if (!forwardResult?.skipped) {
+            db.markForwarded({ orderId });
+          }
         } catch (forwardErr) {
           console.error('Ringier Forward fehlgeschlagen:', forwardErr);
           db.markForwardFailed({ orderId, errorMessage: forwardErr?.message || String(forwardErr) });

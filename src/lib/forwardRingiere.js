@@ -1,7 +1,13 @@
 async function forwardOrderToRingiere({ order, orderItems, stripeSession }) {
   const endpoint = process.env.RINGIERE_FORWARD_URL;
-  if (!endpoint) {
-    throw new Error('RINGIERE_FORWARD_URL ist nicht gesetzt');
+  const normalizedEndpoint = typeof endpoint === 'string' ? endpoint.trim() : '';
+  // Forwarding ist optional: wenn kein Endpoint konfiguriert ist (oder ein Platzhalter),
+  // überspringen wir den Schritt ohne Fehler.
+  if (!normalizedEndpoint) {
+    return { skipped: true, reason: 'RINGIERE_FORWARD_URL nicht gesetzt' };
+  }
+  if (/^https?:\/\/example\.com\b/i.test(normalizedEndpoint)) {
+    return { skipped: true, reason: 'RINGIERE_FORWARD_URL ist Platzhalter (example.com)' };
   }
 
   const payload = {
@@ -78,7 +84,7 @@ async function forwardOrderToRingiere({ order, orderItems, stripeSession }) {
     headers['Authorization'] = `Bearer ${process.env.RINGIERE_FORWARD_API_KEY}`;
   }
 
-  const res = await fetch(endpoint, {
+  const res = await fetch(normalizedEndpoint, {
     method: 'POST',
     headers,
     body: JSON.stringify(payload),
