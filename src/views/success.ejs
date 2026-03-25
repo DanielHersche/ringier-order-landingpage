@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <%- include('_head') %>
+    <title>Bestätigung</title>
+  </head>
+  <body>
+    <%- include('_header', { currentPage: 'Bestätigung' }) %>
+
+    <main class="flex-grow">
+      <div class="my-8">
+        <div data-testid="ContentColumn" class="max-w-container grow grid grid-cols-6 gap-x-2.5 md:grid md:grid-cols-12 md:gap-x-4">
+          <div class="col-span-full lg:col-start-2 lg:col-span-10">
+            <div class="grid grid-cols-6 gap-x-2.5 md:grid md:grid-cols-12 md:gap-x-4 py-10 lg:grid-cols-10">
+              <div class="col-span-full">
+                <h1 class="text-2xl md:text-3xl font-bold mb-6">Danke für deine Bestellung</h1>
+
+                <div class="bg-white rounded-radius-card border border-border-color p-6">
+                  <div class="free-text-component free-text-component-padded mb-4">
+                    <h2 class="text-xl font-bold">Bestätigung</h2>
+                    <div class="mt-3 space-y-2">
+                      <% for (const item of orderItemsDetailed) { %>
+                        <div class="text-secondary-gray">
+                          <span class="font-semibold"><%= item.quantity %> ×</span> <%= item.offer.name %> (
+                          <span class="font-semibold"><%= item.lineTotalDisplay %></span>)
+                        </div>
+                      <% } %>
+                    </div>
+                    <div class="mt-4 font-bold">Total: <%= totalDisplay %></div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <div class="text-sm text-secondary-gray">Order-ID</div>
+                      <div class="font-semibold break-all"><%= order.id %></div>
+                    </div>
+                    <div>
+                      <div class="text-sm text-secondary-gray">Stripe Session</div>
+                      <div class="font-semibold break-all"><%= sessionId || order.stripe_checkout_session_id || '-' %></div>
+                    </div>
+                    <div>
+                      <div class="text-sm text-secondary-gray">Status</div>
+                      <div class="font-semibold"><%= order.status %></div>
+                    </div>
+                  </div>
+
+                  <% if (Number(order.gift_subscription) === 1) { %>
+                    <div class="mt-6">
+                      <div class="text-lg font-bold mb-3">Geschenkinformationen</div>
+                      <div class="text-secondary-gray font-semibold">Empfänger</div>
+                      <div class="font-semibold">
+                        <%= order.shipping_first_name %> <%= order.shipping_last_name %><br />
+                        <%= order.shipping_street %> <%= order.shipping_house_no %><br />
+                        <%= order.shipping_postal_code %> <%= order.shipping_city %><br />
+                        <%= order.shipping_country %>
+                      </div>
+                    </div>
+                  <% } %>
+
+                  <p class="mt-4 text-secondary-gray">
+                    Deine Zahlung wurde verarbeitet. Falls Ringiere die Daten erst nach dem Stripe-Webhook übernimmt,
+                    kann es einen kurzen Moment dauern, bis der Status auf “forwarded” steht.
+                  </p>
+
+                  <div class="mt-6">
+                    <a class="relative inline-block min-w-[7.375rem] px-5 h-10 leading-10 text-[0.9375rem] before:absolute before:block before:top-0 before:left-0 before:right-0 before:bottom-0 before:rounded-radius-button before:transition-all outline-none text-button-primary-text before:bg-button-primary-bg before:hover:brightness-hover-button" href="/">
+                      <span class="relative pointer-events-none">Noch eine Bestellung</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <%- include('_footer') %>
+  </body>
+</html>
+
