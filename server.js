@@ -34,6 +34,17 @@ app.get('/', (req, res) => {
   });
 });
 
+
+app.get('/admin/orders', (req, res) => {
+
+  const expectedKey = process.env.ADMIN_API_KEY;
+  const providedKey = req.get('x-api-key');
+  if (!expectedKey || !providedKey || providedKey !== expectedKey) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  return res.json(db.getAllOrders());
+});
+
 function formatChf(cents) {
   const n = Number(cents);
   if (!Number.isFinite(n)) return '-';

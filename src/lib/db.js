@@ -199,6 +199,12 @@ function getOrderItems(orderId) {
     .all(orderId);
 }
 
+function getAllOrders() {
+  return db
+    .prepare(`SELECT * FROM orders ORDER BY created_at DESC`)
+    .all();
+}
+
 function setCheckoutSessionIds({ orderId, stripe_checkout_session_id, stripe_payment_intent_id }) {
   const updatedAt = nowIso();
   db.prepare(
@@ -293,6 +299,7 @@ function markForwardFailed({ orderId, errorMessage }) {
 module.exports = {
   createOrder,
   getOrder,
+  getAllOrders,
   getOrderItems,
   setCheckoutSessionIds,
   markPaidAndStorePayment,
