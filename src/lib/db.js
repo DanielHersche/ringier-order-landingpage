@@ -1,7 +1,13 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 
-const dbPath = path.join(__dirname, '..', '..', 'data', 'orders.sqlite');
+const dbPath = process.env.DB_PATH
+  ? path.resolve(process.env.DB_PATH)
+  : path.join(__dirname, '..', '..', 'data', 'orders.sqlite');
+const dbDir = path.dirname(dbPath);
+fs.mkdirSync(dbDir, { recursive: true });
+
 const db = new Database(dbPath);
 
 db.exec(`
