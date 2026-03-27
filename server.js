@@ -45,6 +45,75 @@ app.get('/admin/orders', (req, res) => {
   return res.json(db.getAllOrders());
 });
 
+const ORDER_CSV_COLUMNS = [
+  'id',
+  'offer_id',
+  'offer_cart_reference',
+  'first_name',
+  'last_name',
+  'email',
+  'phone',
+  'street',
+  'house_no',
+  'postal_code',
+  'city',
+  'country',
+  'consent_terms',
+  'consent_privacy',
+  'gift_subscription',
+  'shipping_first_name',
+  'shipping_last_name',
+  'shipping_street',
+  'shipping_house_no',
+  'shipping_postal_code',
+  'shipping_city',
+  'shipping_country',
+  'status',
+  'stripe_checkout_session_id',
+  'stripe_payment_intent_id',
+  'stripe_event_id',
+  'currency',
+  'amount_total',
+  'forwarded_at',
+  'forward_error',
+  'created_at',
+  'updated_at',
+];
+
+function escapeCsvCellSemicolon(value) {
+  if (value === null || value === undefined) return '';
+  const s = String(value);
+  if (/[";\r\n]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function ordersToCsvSemicolon(rows) {
+  const delimiter = ';';
+  const lines = [];
+  lines.push(ORDER_CSV_COLUMNS.map((c) => escapeCsvCellSemicolon(c)).join(delimiter));
+  for (const row of rows) {
+    lines.push(
+      ORDER_CSV_COLUMNS.map((col) => escapeCsvCellSemicolon(row[col])).join(delimiter)
+    );
+  }
+  return lines.join('\r\n');
+}
+
+app.get('/admin/orders/export', (req, res) => {
+  const expectedKey = process.env.ADMIN_API_KEY;
+  const providedKey = req.get('x-api-key');
+  if (!expectedKey || !providedKey || providedKey !== expectedKey) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const rows = db.getAllOrders();
+  const body = ordersToCsvSemicolon(rows);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="orders.csv"');
+  return res.send(body);
+});
+
 function formatChf(cents) {
   const n = Number(cents);
   if (!Number.isFinite(n)) return '-';
