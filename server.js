@@ -13,6 +13,7 @@ const { createCheckoutSession } = require('./src/lib/stripeCheckout');
 const { getAllOffers, getOfferById } = require('./src/lib/offers');
 const db = require('./src/lib/db');
 const { forwardOrderToRingiere } = require('./src/lib/forwardRingiere');
+const { sendSalesPaidNotification } = require('./src/lib/salesNotificationEmail');
 const { addToCartCookie, parseCartItemsCookie, removeFromCartCookie } = require('./src/lib/cart');
 
 const app = express();
@@ -76,6 +77,7 @@ const ORDER_CSV_COLUMNS = [
   'amount_total',
   'forwarded_at',
   'forward_error',
+  'sales_email_sent',
   'created_at',
   'updated_at',
 ];
@@ -120,6 +122,19 @@ function formatChf(cents) {
   const value = n / 100;
   if (Number.isInteger(value)) return `CHF ${value}.–`;
   return `CHF ${value.toFixed(2)} `;
+}
+
+function logSalesEmailOutcome(emailResult) {
+  if (!emailResult) return;
+  if (emailResult.skipped) {
+    if (emailResult.reason === 'Sales-E-Mail bereits gesendet') {
+      console.log('Sales-E-Mail:', emailResult.reason);
+    } else {
+      console.warn('Sales-E-Mail übersprungen:', emailResult.reason);
+    }
+  } else if (emailResult.sent) {
+    console.log('Sales-E-Mail gesendet an', emailResult.to);
+  }
 }
 
 app.get('/cart/add', (req, res) => {
@@ -244,13 +259,53 @@ app.get('/pay', (req, res) => {
   res.render('pay', { order, orderItemsDetailed, totalDisplay });
 });
 
-app.get('/success', (req, res) => {
+app.get('/success', async (req, res) => {
   const orderId = req.query.orderId;
   const sessionId = req.query.session_id;
   if (!orderId) return res.redirect('/');
 
-  const order = db.getOrder(orderId);
+  let order = db.getOrder(orderId);
   if (!order) return res.status(404).render('error', { message: 'Bestellung nicht gefunden.' });
+
+  if (sessionId && process.env.STRIPE_SECRET_KEY) {
+    try {
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      const metaOrderId = session.metadata?.orderId;
+      if (metaOrderId === orderId && session.payment_status === 'paid') {
+        const before = db.getOrder(orderId);
+        if (
+          before &&
+          ['created', 'checkout_created', 'forward_failed'].includes(before.status)
+        ) {
+          const paymentIntentId =
+            typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id || null;
+          db.markPaidAndStorePayment({
+            orderId,
+            stripe_event_id: before.stripe_event_id || `success-return:${sessionId}`,
+            currency: session.currency,
+            amount_total: session.amount_total,
+            stripe_payment_intent_id: paymentIntentId,
+          });
+        }
+        order = db.getOrder(orderId) || order;
+        const orderItemsForMail = db.getOrderItems(orderId) || [];
+        try {
+          const emailResult = await sendSalesPaidNotification({
+            order,
+            orderItems: orderItemsForMail,
+          });
+          logSalesEmailOutcome(emailResult);
+        } catch (emailErr) {
+          console.error('Sales-Benachrichtigung E-Mail fehlgeschlagen:', emailErr);
+        }
+      }
+    } catch (err) {
+      console.error('Success-Return (Stripe / Sales-E-Mail):', err?.message || err);
+    }
+  }
 
   const orderItems = db.getOrderItems(orderId) || [];
   const orderItemsDetailed = orderItems
@@ -508,6 +563,17 @@ app.post(
 
         const updatedOrder = db.getOrder(orderId);
         const orderItems = db.getOrderItems(orderId) || [];
+
+        try {
+          const emailResult = await sendSalesPaidNotification({
+            order: updatedOrder,
+            orderItems,
+          });
+          logSalesEmailOutcome(emailResult);
+        } catch (emailErr) {
+          console.error('Sales-Benachrichtigung E-Mail fehlgeschlagen:', emailErr);
+        }
+
         try {
           const forwardResult = await forwardOrderToRingiere({ order: updatedOrder, orderItems, stripeSession: session });
           if (!forwardResult?.skipped) {

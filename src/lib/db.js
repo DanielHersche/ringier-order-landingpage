@@ -80,6 +80,7 @@ function ensureOrderColumns() {
     .map((c) => c.name);
 
   const desired = [
+    { name: 'sales_email_sent', sql: 'INTEGER NOT NULL DEFAULT 0' },
     { name: 'gift_subscription', sql: "INTEGER NOT NULL DEFAULT 0" },
     { name: 'shipping_first_name', sql: 'TEXT' },
     { name: 'shipping_last_name', sql: 'TEXT' },
@@ -285,6 +286,32 @@ function markForwarded({ orderId }) {
   });
 }
 
+/** Atomar: nur erste Aufruferin erhält true (verhindert doppelte Sales-Mails). */
+function claimSalesEmailSend(orderId) {
+  const updatedAt = nowIso();
+  const r = db
+    .prepare(
+      `
+      UPDATE orders
+      SET sales_email_sent = 1, updated_at = @updated_at
+      WHERE id = @id AND COALESCE(sales_email_sent, 0) = 0
+    `
+    )
+    .run({ id: orderId, updated_at: updatedAt });
+  return r.changes > 0;
+}
+
+function releaseSalesEmailSend(orderId) {
+  const updatedAt = nowIso();
+  db.prepare(
+    `
+    UPDATE orders
+    SET sales_email_sent = 0, updated_at = @updated_at
+    WHERE id = @id
+  `
+  ).run({ id: orderId, updated_at: updatedAt });
+}
+
 function markForwardFailed({ orderId, errorMessage }) {
   const updatedAt = nowIso();
   db.prepare(
@@ -311,6 +338,8 @@ module.exports = {
   markPaidAndStorePayment,
   isStripeEventProcessed,
   markStripeEventProcessed,
+  claimSalesEmailSend,
+  releaseSalesEmailSend,
   markForwarded,
   markForwardFailed,
 };

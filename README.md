@@ -66,6 +66,21 @@ In deinem Stripe Dashboard:
 
 Signatur wird serverseitig geprüft.
 
+## Sales-Benachrichtigung per E-Mail
+
+Nach erfolgreicher Zahlung kann die App eine HTML-E-Mail an `sales@famillesuisse.ch` senden (Betreff: **Ringier Abo Landingpage**), mit bestellten Titeln, Kundennamen, Adresse sowie optional der Geschenk-Lieferadresse.
+
+Der Versand passiert **einmal pro Bestellung** (Duplikate werden vermieden), und zwar sobald eine der beiden Bedingungen erfüllt ist:
+
+1. Stripe-Webhook `checkout.session.completed` (sinnvoll in Produktion)
+2. Aufruf der **Success-URL** mit gültiger `session_id` – die Session wird serverseitig bei Stripe geprüft (`payment_status: paid`). So funktioniert die Benachrichtigung auch lokal **ohne** Stripe-CLI-Webhook.
+
+Dazu SMTP in `.env` setzen (ohne `SMTP_HOST` wird keine Mail versendet; der Webhook bleibt trotzdem erfolgreich):
+
+- `SMTP_HOST`, `SMTP_PORT` (z. B. 587), `SMTP_USER`, `SMTP_PASS`
+- optional: `SMTP_SECURE=true` bei Port 465
+- optional: `SMTP_FROM`, `SALES_NOTIFICATION_TO` (Standard: `sales@famillesuisse.ch`)
+
 ## Wie die Weiterleitung an Ringiere funktioniert
 
 Nach erfolgreicher Zahlung verarbeitet der Webhook:
