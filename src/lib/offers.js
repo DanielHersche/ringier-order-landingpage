@@ -16,7 +16,7 @@ const offers = {
     cartReferenceUrl: 'https://www.online-kiosk.ch/cart/30229429',
     cartLabel: '30229429',
     priceDisplay: 'CHF 129.–',
-    priceCents: 12900,
+    priceCents: 100,
     imageSrc: '/images/beobachter.png',
     imageAlt: 'Magazin | Beobachter',
   },
